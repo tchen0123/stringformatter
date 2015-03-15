@@ -1,0 +1,202 @@
+<html>
+<head>
+<title>
+FormatString JS Test
+</title>
+<script type="text/javascript" src="../FormatString.js">
+</script>
+<body>
+<script>
+var format, value, expected, result;
+var tests =[
+	{
+		format:"{number: {fixed: 2}}",
+		value:2,
+		expected:"2.00"
+	},
+	{
+		format:"{number: {precision: 3}}",
+		value:2,
+		expected:"2.00"
+	},
+	{
+		format:"{number: {as: '%'}}",
+		value:2,
+		expected:"2%"
+	},
+	{
+		format:"{number: {as: 'h'}}",
+		value:255,
+		expected:"0xff"
+	},
+	{
+		format:"{number: {as: 'h'}}",
+		value:-255,
+		expected:"-0xff"
+	},
+	{
+		format:"{number: {as: 'o'}}",
+		value:255,
+		expected:"0377"
+	},
+	{
+		format:"{number: {as: 'o'}}",
+		value:-255,
+		expected:"-0377"
+	},
+	{
+		format:"{number: {as: 'b'}}",
+		value:255,
+		expected:"11111111"
+	},
+	{
+		format:"{number: {as: 'b'}}",
+		value:-255,
+		expected:"-11111111"
+	},
+	{
+		format:"{number: {currency: '$', fixed:2}}",
+		value:255,
+		expected:"$255.00"
+	},
+	{
+		format:"{number: {currency: '$', fixed:2}}",
+		value:-255,
+		expected:"$-255.00"
+	},
+	{
+		format:"{number: {currency: '$', fixed:2, style:(@value < 0 ? 'color:red' : null)}}",
+		value:-255,
+		expected:"<span style='color:red'>$-255.00</span>"
+	},
+	{
+		format:"{number: {currency: '$', fixed:2, accounting: true, style:(@value < 0 ? 'color:red' : null)}}",
+		value:-255,
+		expected:"<span style='color:red'>($255.00)</span>"
+	},
+	{
+		format:"{boolean}",
+		value:true,
+		expected:"true"
+	},
+	{
+		format:"{boolean: {as: 'string'}}",
+		value:true,
+		expected:"yes"
+	},
+	{
+		format:"{boolean: {as: 'string', style:(@value ? 'color:green' : 'color:red')}}",
+		value:true,
+		expected:"<span style='color:green'>yes</span>"
+	},
+	{
+		format:"{boolean: {as: 'number'}}",
+		value:true,
+		expected:"1"
+	},
+	{
+		format:"{boolean}",
+		value:2,
+		expected:"true"
+	},
+	{
+		format:"{boolean}",
+		value:false,
+		expected:"false"
+	},
+	{
+		format:"{boolean: {as: 'string', style:(@value ? 'color:green' : 'color:red')}}",
+		value:false,
+		expected:"<span style='color:red'>no</span>"
+	},
+	{
+		format:"{boolean: {as: 'number'}}",
+		value:false,
+		expected:"0"
+	},
+	{
+		format:"{boolean}",
+		value:null,
+		expected:"false"
+	},
+	{
+		format:"{Array}",
+		value:['a','b','c'],
+		expected:"a,b,c"
+	},
+	{
+		format:"{Array : {delimiter: ';'}}",
+		value:['a','b','c'],
+		expected:"a;b;c"
+	},
+	{
+		format:"{Array : {container: ['[',']']}}",
+		value:['a','b','c'],
+		expected:"[a,b,c]"
+	},
+	{
+		format:"{Array : {container: ['[',']'], quote:true}}",
+		value:['a','b','c'],
+		expected:"['a','b','c']"
+	},
+	{
+		format:"{Array : {include: [0,2]}}",
+		value:['a','b','c'],
+		expected:"a,c"
+	},
+	{
+		format:"{Array : {exclude: [0,2]}}",
+		value:['a','b','c'],
+		expected:"b"
+	},
+	{
+		format:"{Array : {matchValue: /c/}}",
+		value:['a','b','c'],
+		expected:"c"
+	},
+	{
+		format:"{Array}",
+		value:[{v1: "one"},2],
+		expected:"{\"v1\":\"one\"},2"
+	},
+	{
+		format:"{Object}",
+		value:{v1: "one", v2: "two"},
+		expected:"{\"v1\":\"one\",\"v2\":\"two\"}"
+	},
+	{
+		format:"{Object: {include: ['v1']}}",
+		value:{v1: "one", v2: "two"},
+		expected:"{\"v1\":\"one\"}"
+	},
+	{
+		format:"{Object: {exclude: ['v1']}}",
+		value:{v1: "one", v2: "two"},
+		expected:"{\"v2\":\"two\"}"
+	},
+	{
+		format:"{Object: {matchValue: /one/}}",
+		value:{v1: "one", v2: "two"},
+		expected:"{\"v1\":\"one\"}"
+	},
+	{
+		format:"{Date}",
+		value: new Date("01 August 2005 17:01:01.500 UTC"),
+		expected:"2005-08-01T17:01:01.500Z"
+	},
+	{
+		format:"{Date: {format: 'dddd, MMMM Do, YYYY'}}",
+		value: new Date("01 August 2005 17:01:01.500 UTC"),
+		expected:"Monday, August 1st, 2005"
+	}
+];
+tests.forEach(function(test) {
+	result =  FormatString.format(test.format,test.value);
+	document.write((result===test.expected ? "passed" : "failed") + ": (FormatString.format('" + test.format + "'," + JSON.stringify(test.value) + ") === " + result + ")" + (result===test.expected ? " === " : " !== ") + test.expected + "<br>");
+});
+var value = new Date("01 August 2005 17:01:01.500 UTC");
+result =  FormatString.format("{Date: {format: 'dddd, MMMM Do, YYYY'}} is the {Date: {format: 'do'}} day of the week.",value,value);
+document.write(result);
+</script>
+</body>
+</head></html>
