@@ -454,28 +454,6 @@
 					result = padding+result;
 					return result;
 				},
-				Date: function(spec,value) {
-					var dt = value;
-					if(!(dt instanceof Date)) {
-						var asint = parseInt(value);
-						if(asint==value) {
-							dt = new Date();
-							dt.setTime(asint);
-						} else {
-							dt = new Date(value);
-						}
-					}
-					var result = moment(dt.toISOString()).format(spec);
-					var padding = "";
-					if(spec.width) {
-						 var padlen = spec.padding - result.length;
-						 if(padlen>0) {
-							 padding = (spec.padding ? spec.padding : "").repeat(padlen);
-						 }
-					}
-					result = padding+result;
-					return result;
-				},
 				Function: function(spec,value) {
 				// name, signature
 				}
@@ -493,6 +471,15 @@
 	StringFormatter.prototype.register = function(constructor,formatter,name) {
 		name || (name = constructor.name);
 		this.formats[name] = (formatter ? formatter : constructor.prototype.StringFormatter);
+	}
+	StringFormatter.prototype.polyfill = function() {
+		var me = this;
+		String.prototype.format = function() {
+			var args = Array.prototype.slice.call(arguments,0);
+			args.unshift(this);
+			var result = me.format.apply(me,args);
+			return result.substring(1,result.length-2);
+		}
 	}
 	StringFormatter.prototype.format = function(formatspec,vargs) {
 		var me = this;
@@ -530,22 +517,13 @@
 		formatter.statics.forEach(function(str,i) {
 			results.push(str);
 			if(i<args.length-1 && i<formatter.patterns.length) {
-				var value;
 				var arg = args[i+1];
 				var pattern = formatter.patterns[i];
 				var type = Object.keys(pattern)[0];
 				var spec = pattern[type];
-				if(typeof(me.helpers[spec])==="function") {
-					try {
-						value = me.helpers[spec].call(arg,arg);
-						} catch(e) {
-							value = e+"";
-						}
-				} else {
-					value = (typeof(me.formats[type])==="function" ? 
+				var value = (typeof(me.formats[type])==="function" ? 
 								(arg instanceof Object ? me.formats[type].call(arg,spec,me) : me.formats[type](spec,arg)) : 
 								pattern); // if can't resolve, just gets included in output
-				}
 				if(spec.style) {
 					value = "<span style='" + spec.style + "'>" + value + "</span>";
 				}
@@ -553,9 +531,6 @@
 			}
 		});
 		return results.join("");
-	}
-	StringFormatter.prototype.helpers = {
-			toISOString: Date.prototype.toISOString
 	}
 	function objectFormatter(spec,formatter) {
 		function inrange(key) {
@@ -674,5 +649,6 @@
 	exports.StringFormatter = new StringFormatter();
 	exports.StringFormatter.register(Array,arrayFormatter,"Array");
 	exports.StringFormatter.register(Object,objectFormatter,"Object");
+	exports.StringFormatter.register(Object,objectFormatter,"object");
 	exports.StringFormatter.register(Date,dateFormatter,"Date");
 })("undefined"!=typeof exports&&"undefined"!=typeof global?global:window);

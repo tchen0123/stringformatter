@@ -10,6 +10,11 @@ StringFormatter JS Test
 var format, value, expected, result;
 var tests =[
 	{
+		format:"{number}",
+		value:2,
+		expected:"2"
+	},
+	{
 		format:"{number: {fixed: 2}}",
 		value:2,
 		expected:"2.00"
@@ -53,6 +58,16 @@ var tests =[
 		format:"{number: {as: 'b'}}",
 		value:-255,
 		expected:"-11111111"
+	},
+	{
+		format:"{number: {ifNaN: 'Not A Number'}}",
+		value:NaN,
+		expected:"Not A Number"
+	},
+	{
+		format:"{number: {ifInfinity: 'Bigger Than Google!'}}",
+		value:Infinity,
+		expected:"Bigger Than Google!"
 	},
 	{
 		format:"{number: {currency: '$', fixed:2}}",
@@ -221,8 +236,10 @@ value = new Date();
 result = StringFormatter.format
 result = StringFormatter.format("Your local time/date is {Date: {format: 'L'}}. Your timezone offset is {Date: {format: 'ZZ'}} or {Date: {format: 'Z'}}.<br>",value,value,value);
 document.write(result);
-result =  StringFormatter.format("Your time/date is {Date: {format: 'T'}} or {Date: {format: 't'}}.",value,value);
+result =  StringFormatter.format("Your time/date is {Date: {format: 'T'}} or {Date: {format: 't'}}.<br>",value,value);
 document.write(result);
+StringFormatter.polyfill();
+document.write("Using a polyfilled String, your time/date is {Date: {format: 'T'}} or {Date: {format: 't'}}.".format(value,value));
 </script>
 </body>
 </head></html>
