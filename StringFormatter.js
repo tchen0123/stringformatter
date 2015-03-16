@@ -3,7 +3,7 @@
 	// (c) 2007 Steven Levithan <stevenlevithan.com>
 	// MIT License matchRecursiveRegExp
 	// (c) 2014, 2015 Simon Y. Blackwell <syblackwell@anywhichway.com>
-	// MIT License replaceRecursiveRegExp, FormatString
+	// MIT License replaceRecursiveRegExp, StringFormatter
 	
 	// dependencies ... moment.js
 	
@@ -93,7 +93,7 @@
 	}
 	DateFormat.prototype.format = function() {
 		if(!this.spec) {
-			return this.date.toISOString();
+			return this.date.toString();
 		}
 		var substitutions = [];
 		substitutions.push(this.getMonth());
@@ -102,6 +102,18 @@
 		substitutions.push(this.getDayOfYear());
 		substitutions.push(this.getDayOfMonth());
 		substitutions.push(this.getDayOfWeek());
+		substitutions.push(this.getAMPM());
+		substitutions.push(this.getHours());
+		substitutions.push(this.getMinutes());
+		substitutions.push(this.getSeconds());
+		substitutions.push(this.getMilliseconds());
+		substitutions.push(this.getTime());
+		substitutions.push(this.getTimezoneOffset());
+		substitutions.push(this.toUTCString());
+		substitutions.push(this.toGMTString());
+		substitutions.push(this.toISOString());
+		substitutions.push(this.toLocaleString());
+		substitutions.push(this.toTimeString());
 		var str = ""+this.spec;
 		substitutions.forEach(function(substitution) {
 			if(substitution) {
@@ -162,14 +174,19 @@
 		return null;
 	}
 	DateFormat.prototype.getDayOfYear = function() {
+		var dt = new Date(this.date);
+		dt.setHours(23);
+		var d = Math.round((dt - new Date(dt.getFullYear(), 0, 1, 0, 0, 0))/1000/60/60/24);
 		if(this.spec.indexOf("DDDD")>=0) {
-			return null;
+			return {substitute: (d<10 ? "00"+d : (d<100 ? "0"+d : ""+d)), pattern:"DDDD"};
 		};
 		if(this.spec.indexOf("DDDo")>=0) {
-			return null;
+			d = d+"";
+			d = (d.lastIndexOf("1")==d.length+1 ? d+"st" : (d.lastIndexOf("2")===d.length+1 ? d+"nd" : (d.lastIndexOf("3")===d.length+1 ? d+"rd" : d+"th")));
+			return {substitute:d , pattern:"DDDo"};
 		};
 		if(this.spec.indexOf("DDD")>=0) {
-			return null;
+			return {substitute: ""+d, pattern:"DDD"};
 		};
 		return null;
 	}
@@ -223,8 +240,125 @@
 		};
 		return null;
 	}
-	
-	function FormatString() {
+	DateFormat.prototype.getHours = function() {
+		var h = this.date.getHours();
+		if(this.spec.indexOf("HH")>=0) {
+			return {substitute: (h<10 ? "0"+h : ""+h), pattern:"HH"};
+		};
+		if(this.spec.indexOf("H")>=0) {
+			return {substitute: ""+h, pattern:"H"};
+		};
+		h = (h==0 ? 12 : h);
+		h = (h>12 ? h-12 : h);
+		if(this.spec.indexOf("hh")>=0) {
+			return {substitute: (h<10 ? "0"+h : ""+h), pattern:"hh"};
+		};
+		if(this.spec.indexOf("h")>=0) {
+			return {substitute: ""+h, pattern:"h"};
+		};
+		return null;
+	}
+	DateFormat.prototype.getAMPM = function() {
+		var h = this.date.getHours();
+		if(this.spec.indexOf("A")>=0) {
+			return {substitute: (h>11 ? "PM" : "AM"), pattern:"A"};
+		};
+		if(this.spec.indexOf("a")>=0) {
+			return {substitute: (h>11 ? "pm" : "am"), pattern:"a"};
+		};
+		return null;
+	}
+	DateFormat.prototype.getMinutes = function() {
+		var minutes = this.date.getMinutes();
+		if(this.spec.indexOf("mm")>=0) {
+			return {substitute: (minutes<10 ? "0"+minutes : minutes+""), pattern:"mm"};
+		};
+		if(this.spec.indexOf("m")>=0) {
+			return {substitute: minutes+"", pattern:"m"};
+		};
+		return null;
+	}
+	DateFormat.prototype.getSeconds = function() {
+		var seconds = this.date.getSeconds();
+		if(this.spec.indexOf("ss")>=0) {
+			return {substitute: (seconds<10 ? "0"+seconds : seconds+""), pattern:"ss"};
+		};
+		if(this.spec.indexOf("s")>=0) {
+			return {substitute: seconds+"", pattern:"s"};
+		};
+		return null;
+	}
+	DateFormat.prototype.getMilliseconds = function() {
+		var ms = this.date.getMilliseconds()+"";
+		if(this.spec.indexOf("SSS")>=0) {
+			return {substitute: ms, pattern:"SSS"};
+		};
+		if(this.spec.indexOf("SS")>=0) {
+			return {substitute: ms.substring(0,2), pattern:"SS"};
+		};
+		if(this.spec.indexOf("S")>=0) {
+			return {substitute: ms.substring(0,1), pattern:"S"};
+		};
+		return null;
+	}
+	DateFormat.prototype.getTime = function() {
+		var t = this.date.getTime()+"";
+		if(this.spec.indexOf("X")>=0) {
+			return {substitute: t, pattern:"X"};
+		};
+		return null;
+	}
+	DateFormat.prototype.getTimezoneOffset = function() {
+		var os = this.date.getTimezoneOffset();
+		var isneg = (os < 0 ? true : false);
+		var ho = Math.abs(os/60);
+		var hr = parseInt(ho)+"";
+		hr = (hr<10 ? "0"+hr : hr+"");
+		hr = (isneg ? "-"+hr : "+"+hr);
+		var min = Math.abs(os % 60);
+		min = (min<10 ? "0"+min : min+"");
+		if(this.spec.indexOf("ZZ")>=0) {
+			return {substitute: hr+":"+min, pattern:"ZZ"};
+		};
+		if(this.spec.indexOf("Z")>=0) {
+			return {substitute:  hr+min, pattern:"Z"};
+		};
+		return null;
+	}
+	DateFormat.prototype.toUTCString = function() {
+		if(this.spec.indexOf("U")>=0) {
+			return {substitute: this.date.toUTCString().replace("GMT","UTC"), pattern:"U"};
+		};
+		return null;
+	}
+	DateFormat.prototype.toGMTString = function() {
+		if(this.spec.indexOf("G")>=0) {
+			return {substitute: this.date.toUTCString().replace("UTC","GMT"), pattern:"G"};
+		};
+		return null;
+	}
+	DateFormat.prototype.toISOString = function() {
+		if(this.spec.indexOf("I")>=0) {
+			return {substitute: this.date.toISOString(), pattern:"I"};
+		};
+		return null;
+	}
+	DateFormat.prototype.toLocaleString = function() {
+		if(this.spec.indexOf("L")>=0) {
+			return {substitute: this.date.toLocaleString(), pattern:"L"};
+		};
+		return null;
+	}
+	DateFormat.prototype.toTimeString = function() {
+		if(this.spec.indexOf("T")>=0) {
+			return {substitute: this.date.toTimeString(), pattern:"T"};
+		};
+		if(this.spec.indexOf("t")>=0) {
+			return {substitute: this.date.toLocaleTimeString(), pattern:"t"};
+		};
+		return null;
+	}
+	function StringFormatter() {
 		var me = this;
 		this.cache = {};
 		this.gcOn = true;
@@ -349,34 +483,34 @@
 		this.formats.object = this.formats.Object;
 		this.formats["function"] = this.formats.Function;
 	}
-	FormatString.prototype.gc = function() {
+	StringFormatter.prototype.gc = function() {
 		for(var key in this.cache) {
 			if(this.cache[key].hits <= this.gcPurgeLessThan) {
 				delete this.cache[key];
 			}
 		}
 	}
-	FormatString.prototype.register = function(constructor,formatter,name) {
+	StringFormatter.prototype.register = function(constructor,formatter,name) {
 		name || (name = constructor.name);
-		this.formats[name] = (formatter ? formatter : constructor.prototype.formatstring);
+		this.formats[name] = (formatter ? formatter : constructor.prototype.StringFormatter);
 	}
-	FormatString.prototype.format = function(formatspec,vargs) {
+	StringFormatter.prototype.format = function(formatspec,vargs) {
 		var me = this;
 		var args = Array.prototype.slice.call(arguments,1);
-		var formatstring = (formatspec instanceof Object ? JSON.stringify(formatspec) : formatspec);
+		var StringFormatter = (formatspec instanceof Object ? JSON.stringify(formatspec) : formatspec);
 		me.hits++;
 		if(me.gcOn && me.hits>=me.gcThreshold) {
 			me.gc();
 		}
-		var formatter = this.cache[formatstring];
+		var formatter = this.cache[StringFormatter];
 		if(!formatter) {
 			formatter = {patterns:[],statics:[],hits:0};
-			if(formatstring.indexOf("@value")===-1 && formatstring.indexOf("@arguments")===-1) {
-				this.cache[formatstring] = formatter;
+			if(StringFormatter.indexOf("@value")===-1 && StringFormatter.indexOf("@arguments")===-1) {
+				this.cache[StringFormatter] = formatter;
 			}
-			var tmp = replaceRecursiveRegExp(formatstring,"\\{","\\}","g","@!$format$!@");
+			var tmp = replaceRecursiveRegExp(StringFormatter,"\\{","\\}","g","@!$format$!@");
 			formatter.statics = tmp.split("@!$format$!@");
-			formatter.patterns = matchRecursiveRegExp(formatstring,"\\{","\\}","g");
+			formatter.patterns = matchRecursiveRegExp(StringFormatter,"\\{","\\}","g");
 			if(formatter.patterns) {
 				formatter.patterns.forEach(function(pattern,i) {
 					if(pattern.indexOf(":")>=0) {
@@ -420,7 +554,7 @@
 		});
 		return results.join("");
 	}
-	FormatString.prototype.helpers = {
+	StringFormatter.prototype.helpers = {
 			toISOString: Date.prototype.toISOString
 	}
 	function objectFormatter(spec,formatter) {
@@ -537,8 +671,8 @@
 		return dateformat.format();
 	}
 
-	exports.FormatString = new FormatString();
-	exports.FormatString.register(Array,arrayFormatter,"Array");
-	exports.FormatString.register(Object,objectFormatter,"Object");
-	exports.FormatString.register(Date,dateFormatter,"Date");
+	exports.StringFormatter = new StringFormatter();
+	exports.StringFormatter.register(Array,arrayFormatter,"Array");
+	exports.StringFormatter.register(Object,objectFormatter,"Object");
+	exports.StringFormatter.register(Date,dateFormatter,"Date");
 })("undefined"!=typeof exports&&"undefined"!=typeof global?global:window);
