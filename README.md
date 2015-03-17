@@ -5,6 +5,12 @@ For documentation see the Wiki: https://github.com/anywhichway/stringformatter/w
 
 For questions, bugs, enhancement requests use: https://github.com/anywhichway/stringformatter/issues
 
+Currently planned sprints are:
+
+[2014 March](https://github.com/anywhichway/stringformatter/issues?q=is%3Aopen+is%3Aissue+milestone%3A%222015+March+Sprint%22)
+
+[2014 April](https://github.com/anywhichway/stringformatter/issues?q=is%3Aopen+is%3Aissue+milestone%3A%222015+April+Sprint%22)
+
 Feel free to fork and send us pull requests. We would like to make this better for everyone.
 
 # updates
