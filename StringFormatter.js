@@ -3,7 +3,7 @@
 	// (c) 2007 Steven Levithan <stevenlevithan.com>
 	// MIT License matchRecursiveRegExp
 	// (c) 2014, 2015 Simon Y. Blackwell <syblackwell@anywhichway.com>
-	// MIT License replaceRecursiveRegExp, StringFormatter
+	// MIT License replaceRecursiveRegExp, StringFormatter, DateFormat
 	
 	// dependencies ... moment.js
 	
@@ -360,12 +360,12 @@
 	}
 	function StringFormatter() {
 		var me = this;
-		this.cache = {};
+		this.cache = {}; // cache for format strings
 		this.gcOn = true;
-		this.hits = 0;
-		this.gcThreshold = 1000;
-		this.gcPurgeLessThan = 1;
-		this.formats = {
+		this.hits = 0; // number of times format has been called
+		this.gcThreshold = 1000; // point at which hits results in an attempt to garbage collect
+		this.gcPurgeLessThan = 1; // if the use of a string is less than this, then purge from cache during garbage collection
+		this.formats = { // storage for functions that actually do the string manipulation for formatting
 				string : function(spec,value) {
 					var result = value+"";
 					var padding = "";
@@ -461,6 +461,7 @@
 		this.formats.object = this.formats.Object;
 		this.formats["function"] = this.formats.Function;
 	}
+	/* Loop through cache and delete items that have a low utilization */
 	StringFormatter.prototype.gc = function() {
 		for(var key in this.cache) {
 			if(this.cache[key].hits <= this.gcPurgeLessThan) {
@@ -468,10 +469,12 @@
 			}
 		}
 	}
+	/* Register a formatter */
 	StringFormatter.prototype.register = function(constructor,formatter,name) {
 		name || (name = constructor.name);
 		this.formats[name] = (formatter ? formatter : constructor.prototype.StringFormatter);
 	}
+	/* Patch the global String object so it supports format */
 	StringFormatter.prototype.polyfill = function() {
 		var me = this;
 		String.prototype.format = function() {
@@ -484,20 +487,26 @@
 	StringFormatter.prototype.format = function(formatspec,vargs) {
 		var me = this;
 		var args = Array.prototype.slice.call(arguments,1);
-		var StringFormatter = (formatspec instanceof Object ? JSON.stringify(formatspec) : formatspec);
+		// turn format spec into a string, rarely needed unless soemone if building format specs on the fly
+		var stringformatter = (formatspec instanceof Object ? JSON.stringify(formatspec) : formatspec);
+		// increment overall hit count
 		me.hits++;
 		if(me.gcOn && me.hits>=me.gcThreshold) {
 			me.gc();
 		}
-		var formatter = this.cache[StringFormatter];
-		if(!formatter) {
+		// look for the format spec in the cache
+		var formatter = this.cache[stringformatter];
+		if(!formatter) { // create a cached spec if not found
 			formatter = {patterns:[],statics:[],hits:0};
-			if(StringFormatter.indexOf("@value")===-1 && StringFormatter.indexOf("@arguments")===-1) {
-				this.cache[StringFormatter] = formatter;
+			// don't cache specs that are dynamic
+			if(stringformatter.indexOf("@value")===-1 && stringformatter.indexOf("@arguments")===-1) {
+				this.cache[stringformatter] = formatter;
 			}
-			var tmp = replaceRecursiveRegExp(StringFormatter,"\\{","\\}","g","@!$format$!@");
-			formatter.statics = tmp.split("@!$format$!@");
-			formatter.patterns = matchRecursiveRegExp(StringFormatter,"\\{","\\}","g");
+			// "compile" the spec by splitting into static elements and patterns
+			var tmp = replaceRecursiveRegExp(stringformatter,"\\{","\\}","g","@!$format$!@"); // replace patterns
+			formatter.statics = tmp.split("@!$format$!@"); // get the surrounding text into statics
+			formatter.patterns = matchRecursiveRegExp(stringformatter,"\\{","\\}","g"); // collect the patterns
+			// process the patterns for dynamic values
 			if(formatter.patterns) {
 				formatter.patterns.forEach(function(pattern,i) {
 					if(pattern.indexOf(":")>=0) {
@@ -511,14 +520,18 @@
 				});
 			}
 		}
+		// increment the hit count for the specific formatter
 		formatter.hits++;
 		var results = [];
 		var args = arguments;
+		// loop through statics
 		formatter.statics.forEach(function(str,i) {
-			results.push(str);
+			results.push(str); // push them onto the result
+			// get the pattern and argument at the same index
 			if(i<args.length-1 && i<formatter.patterns.length) {
 				var arg = args[i+1];
 				var pattern = formatter.patterns[i];
+				// figure out what formatter to call and call it
 				var type = Object.keys(pattern)[0];
 				var spec = pattern[type];
 				var value = (typeof(me.formats[type])==="function" ? 
@@ -527,10 +540,11 @@
 				if(spec.style) {
 					value = "<span style='" + spec.style + "'>" + value + "</span>";
 				}
+				// push the formatted data onto result
 				results.push(value);
 			}
 		});
-		return results.join("");
+		return results.join(""); // create the final string
 	}
 	function objectFormatter(spec,formatter) {
 		function inrange(key) {
